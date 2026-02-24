@@ -16,7 +16,7 @@ LOCAL_CFLAGS+=-std=gnu11 -D_FILE_OFFSET_BITS=64 -Wall -Wextra -pedantic -Wno-gnu
 # older versions of gcc/clang need these as well
 LOCAL_CFLAGS+=-Wno-missing-field-initializers -Wno-missing-braces
 
-TARGETS = hfsfuse hfsdump
+TARGETS = hfsfuse hfsdump hfsclone
 
 XATTR_NAMESPACE ?= user.
 ifeq ($(OS), Darwin)
@@ -239,7 +239,7 @@ endef
 
 export CONFIG PREFIX prefix bindir libdir includedir DESTDIR CFLAGS LIBDIRS INSTALL pkg_config_file
 
-DEPS = src/hfsfuse.d src/hfsdump.d src/hfstar.d
+DEPS = src/hfsfuse.d src/hfsdump.d src/hfsclone.d src/hfstar.d
 
 LDLIBS += $(APP_LIB) -lpthread
 
@@ -270,6 +270,8 @@ hfsfuse: src/hfsfuse.o $(LIBS)
 
 hfsdump: src/hfsdump.o $(LIBS)
 
+hfsclone: src/hfsclone.o $(LIBS)
+
 hfstar: CPPFLAGS += $(APP_FLAGS) $(UTHASH_FLAGS) -DXATTR_NAMESPACE=$(XATTR_NAMESPACE)
 hfstar: LDLIBS += -larchive
 hfstar: src/hfstar.o $(LIBS)
@@ -277,6 +279,7 @@ hfstar: src/hfstar.o $(LIBS)
 clean:
 	for dir in $(LIBDIRS); do $(MAKE) -C $$dir clean; done
 	$(RM) src/hfsfuse.o hfsfuse src/hfsdump.o hfsdump src/hfstar.o hfstar libhfsuser.pc $(DEPS)
+	$(RM) src/hfsclone.o hfsclone
 
 distclean: clean
 	$(RM) config.mak src/version.h AUTHORS "$(RELEASE_NAME).tar.gz"
@@ -294,10 +297,11 @@ install: $(TARGETS)
 	mkdir -pm755 $(DESTDIR)$(prefix)/add-ons/userlandfs/
 	$(INSTALL) -m644 hfsfuse $(DESTDIR)$(prefix)/add-ons/userlandfs/
 	$(INSTALL) -m755 hfsdump $(DESTDIR)$(bindir)
+	$(INSTALL) -m755 hfsclone $(DESTDIR)$(bindir)
 	[ -f hfstar ] && $(INSTALL) -m755 hfstar $(DESTDIR)$(bindir)
 
 uninstall:
-	$(RM) $(DESTDIR)$(prefix)/add-ons/userlandfs/hfsfuse $(DESTDIR)$(bindir)/hfsdump $(DESTDIR)$(bindir)/hfstar
+	$(RM) $(DESTDIR)$(prefix)/add-ons/userlandfs/hfsfuse $(DESTDIR)$(bindir)/hfsdump $(DESTDIR)$(bindir)/hfsclone $(DESTDIR)$(bindir)/hfstar
 else
 install: $(TARGETS)
 	mkdir -pm755 $(DESTDIR)$(bindir)
@@ -305,6 +309,7 @@ install: $(TARGETS)
 
 uninstall:
 	$(RM) $(DESTDIR)$(bindir)/hfsfuse $(DESTDIR)$(bindir)/hfsdump $(DESTDIR)$(bindir)/hfstar
+	$(RM) $(DESTDIR)$(bindir)/hfsclone
 endif
 
 version:
