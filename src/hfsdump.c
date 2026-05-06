@@ -78,6 +78,28 @@ static inline void dump_mdb(hfs_hfs_master_directory_block_t mdb) {
 	);
 }
 
+static inline void dump_btree_header(const char* name, hfs_header_record_t hr) {
+	printf(
+		"%s B-tree header:\n"
+		"tree_depth: %" PRIu16 "\n"
+		"root_node: %" PRIu32 "\n"
+		"leaf_records: %" PRIu32 "\n"
+		"first_leaf: %" PRIu32 "\n"
+		"last_leaf: %" PRIu32 "\n"
+		"node_size: %" PRIu16 "\n"
+		"max_key_len: %" PRIu16 "\n"
+		"total_nodes: %" PRIu32 "\n"
+		"free_nodes: %" PRIu32 "\n"
+		"clump_size: %" PRIu32 "\n"
+		"btree_type: %" PRIu8 "\n"
+		"keycomp_type: %" PRIu8 "\n"
+		"attributes: %" PRIu32 "\n",
+		name, hr.tree_depth, hr.root_node, hr.leaf_recs, hr.first_leaf, hr.last_leaf,
+		hr.node_size, hr.max_key_len, hr.total_nodes, hr.free_nodes, hr.clump_size,
+		hr.btree_type, hr.keycomp_type, hr.attributes
+	);
+}
+
 static inline void dump_volume_header(hfs_volume_header_t vh) {
 	char ctimebuf[4][26] = {0};
 	printf(
@@ -247,6 +269,13 @@ int main(int argc, char* argv[]) {
 			dump_mdb(vol.mdb);
 		else
 			dump_volume_header(vol.vh);
+
+		printf("\n");
+		dump_btree_header("Catalog", vol.chr);
+		printf("\n");
+		dump_btree_header("Extents Overflow", vol.ehr);
+		if (vol.type != HFS_TYPE_PLAIN && vol.vh.attributes_file.extents[0].block_count > 0)
+			dump_btree_header("Attributes", vol.ahr);
 		goto end;
 	}
 

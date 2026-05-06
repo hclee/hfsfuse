@@ -226,6 +226,33 @@ hfslib_open_volume(
 			for (int i = 0; i < out_vol->name.length && i < 27; i++)
 				out_vol->name.unicode[i] = (unichar_t)mdb.volume_name[i + 1];
 
+			out_vol->catkeysizefieldsize = sizeof(uint8_t);
+			out_vol->extkeysizefieldsize = sizeof(uint8_t);
+
+			/* Catalog B-tree header node */
+			if (hfslib_readd(out_vol, buffer, 512,
+			    mdb.first_block * 512 +
+			    mdb.catalog_extents[0].start_block * (uint64_t)mdb.block_size,
+			    cbargs) != 0)
+				HFS_LIBERR("could not read catalog header node");
+			node_recs[0] = (char *)buffer + 14;
+			node_rec_sizes[0] = 120;
+			if (hfslib_read_header_node(node_recs, node_rec_sizes, 1,
+			    &out_vol->chr, NULL, NULL) == 0)
+				HFS_LIBERR("could not parse catalog header node");
+
+			/* Extents B-tree header node */
+			if (hfslib_readd(out_vol, buffer, 512,
+			    mdb.first_block * 512 +
+			    mdb.extents_extents[0].start_block * (uint64_t)mdb.block_size,
+			    cbargs) != 0)
+				HFS_LIBERR("could not read extents header node");
+			node_recs[0] = (char *)buffer + 14;
+			node_rec_sizes[0] = 120;
+			if (hfslib_read_header_node(node_recs, node_rec_sizes, 1,
+			    &out_vol->ehr, NULL, NULL) == 0)
+				HFS_LIBERR("could not parse extents header node");
+
 			result = 0;
 			goto error; /* Use error label as cleanup */
 		}
