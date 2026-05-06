@@ -216,10 +216,22 @@ hfslib_open_volume(
 			    sizeof(hfs_volume_header_t),
 			    HFS_VOLUME_HEAD_RESERVE_SIZE, cbargs) != 0)
 				HFS_LIBERR("could not read volume header");
-		} else
-			HFS_LIBERR("Plain HFS volumes not currently supported");
+		} else {
+			out_vol->type = HFS_TYPE_PLAIN;
+			memcpy(&out_vol->mdb, &mdb, sizeof(mdb));
+			out_vol->journaled = 0;
+
+			/* Store volume name (Pascal string in MDB) */
+			out_vol->name.length = mdb.volume_name[0];
+			for (int i = 0; i < out_vol->name.length && i < 27; i++)
+				out_vol->name.unicode[i] = (unichar_t)mdb.volume_name[i + 1];
+
+			result = 0;
+			goto error; /* Use error label as cleanup */
+		}
 	}
 
+	out_vol->type = HFS_TYPE_PLUS; /* Default to HFS+ if not plain HFS */
 	if (hfslib_read_volume_header(buffer, &(out_vol->vh)) == 0)
 		HFS_LIBERR("could not parse volume header");
 

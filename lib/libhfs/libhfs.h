@@ -492,8 +492,18 @@ typedef struct {
 #pragma mark Custom Types
 #endif
 
+typedef enum {
+	HFS_TYPE_PLAIN,
+	HFS_TYPE_PLUS,
+	HFS_TYPE_X
+} hfs_type_t;
+
 typedef struct {
-	hfs_volume_header_t	vh;		/* volume header */
+	hfs_type_t type;
+	union {
+		hfs_volume_header_t vh;
+		hfs_hfs_master_directory_block_t mdb;
+	};
 	hfs_header_record_t	chr;	/* catalog file header node record*/
 	hfs_header_record_t	ehr;	/* extent overflow file header node record*/
 	hfs_header_record_t	ahr;	/* attributes file header node record*/

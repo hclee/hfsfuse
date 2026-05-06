@@ -27,6 +27,57 @@ static const char* format_type_code(hfs_macos_type_code code, char code_str[5]) 
 	return code_str;
 }
 
+static inline void dump_mdb(hfs_hfs_master_directory_block_t mdb) {
+	char ctimebuf[3][26] = {0};
+	printf(
+		"master directory block:\n"
+		"signature: %s\n"
+		"date_created: %s"
+		"date_modified: %s"
+		"attributes: %" PRIu16 "\n"
+		"root_file_count: %" PRIu16 "\n"
+		"volume_bitmap_start: %" PRIu16 "\n"
+		"next_alloc_block: %" PRIu16 "\n"
+		"total_blocks: %" PRIu16 "\n"
+		"block_size: %" PRIu32 "\n"
+		"clump_size: %" PRIu32 "\n"
+		"first_block: %" PRIu16 "\n"
+		"next_cnid: %" PRIu32 "\n"
+		"free_blocks: %" PRIu16 "\n"
+		"volume_name: %.*s\n"
+		"date_backedup: %s"
+		"backup_seqnum: %" PRIu16 "\n"
+		"write_count: %" PRIu32 "\n"
+		"extents_clump_size: %" PRIu32 "\n"
+		"catalog_clump_size: %" PRIu32 "\n"
+		"root_folder_count: %" PRIu16 "\n"
+		"file_count: %" PRIu32 "\n"
+		"folder_count: %" PRIu32 "\n",
+		(char[3]){mdb.signature>>8,mdb.signature&0xFF,'\0'},
+		hfs_ctime_r(HFSTIMETOEPOCH(mdb.date_created),ctimebuf[0]),
+		hfs_ctime_r(HFSTIMETOEPOCH(mdb.date_modified),ctimebuf[1]),
+		mdb.attributes,
+		mdb.root_file_count,
+		mdb.volume_bitmap,
+		mdb.next_alloc_block,
+		mdb.total_blocks,
+		mdb.block_size,
+		mdb.clump_size,
+		mdb.first_block,
+		mdb.next_cnid,
+		mdb.free_blocks,
+		mdb.volume_name[0], mdb.volume_name + 1,
+		hfs_ctime_r(HFSTIMETOEPOCH(mdb.date_backedup),ctimebuf[2]),
+		mdb.backup_seqnum,
+		mdb.write_count,
+		mdb.extents_clump_size,
+		mdb.catalog_clump_size,
+		mdb.root_folder_count,
+		mdb.file_count,
+		mdb.folder_count
+	);
+}
+
 static inline void dump_volume_header(hfs_volume_header_t vh) {
 	char ctimebuf[4][26] = {0};
 	printf(
@@ -189,8 +240,13 @@ int main(int argc, char* argv[]) {
 	if(argc < 4) {
 		char name[HFS_NAME_MAX+1];
 		hfs_unistr_to_utf8(&vol.name, name);
-		printf("Volume name: %s\nJournaled? %d\nReadonly? %d\nOffset: %" PRIu64 "\n",name,vol.journaled, vol.readonly, vol.offset);
-		dump_volume_header(vol.vh);
+		printf("Volume type: %s\nVolume name: %s\nJournaled? %d\nReadonly? %d\nOffset: %" PRIu64 "\n",
+			(vol.type == HFS_TYPE_PLAIN ? "HFS (Standard)" : "HFS+"),
+			name, vol.journaled, vol.readonly, vol.offset);
+		if (vol.type == HFS_TYPE_PLAIN)
+			dump_mdb(vol.mdb);
+		else
+			dump_volume_header(vol.vh);
 		goto end;
 	}
 
